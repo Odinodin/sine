@@ -53,21 +53,21 @@
           [:button {:className "button"
                     :onclick (:dec-fn b)} "-"]])))])
 
-(def initial-state {:letters (seq "KODEMAKER KODEMAKER KODEMAKER")
+(def initial-state {:letters (seq "KODEMAvKER")
                     :tick 0
                     :amplitude 10
-                    :y-offset 50
-                    :x-spacing 7
-                    :x-speed 0.3
-                    :y-speed 0.05
+                    :y-offset 100
+                    :angle-speed 0.5
+                    :x-spacing 24
+                    :speed (/ 1 30)
                     :rotation-multiplier 0.5})
 
 (defonce state (atom initial-state))
 
 (def colors ["#330000" "#990000" "#cc0000" "#dd0000"])
 
-(defn y-pos [{:keys [x amplitude y-offset]}]
-  (-> (js/Math.sin x)
+(defn y-pos [{:keys [angle amplitude y-offset]}]
+  (-> (js/Math.sin angle)
       (* amplitude)
       (+ y-offset)))
 
@@ -78,42 +78,40 @@
   (let [{:keys [letters
                 tick
                 amplitude
-                y-speed
+                angle-speed
                 y-offset
                 x-spacing
-                x-speed
                 rotation-multiplier]} @state]
     {:buttons [{:text "Amplitude"
                 :inc-fn #(swap! state update :amplitude inc)
                 :dec-fn #(swap! state update :amplitude dec)}
-               {:text "X spacing"
-                :inc-fn #(swap! state update :x-spacing inc)
-                :dec-fn #(swap! state update :x-spacing dec)}
-               {:text "Y speed"
-                :inc-fn #(swap! state update :y-speed (fn [y] (+ y 0.01)))
-                :dec-fn #(swap! state update :y-speed (fn [y] (max (- y 0.01) 0)))}
-               {:text "X speed"
-                :inc-fn #(swap! state update :x-speed (fn [x] (+ x 0.01)))
-                :dec-fn #(swap! state update :x-speed (fn [x] (- x 0.01)))}
-               {:text "Reset"
+               {:text "Periode"
+                :inc-fn #(swap! state update :angle-speed (fn [angle-speed] (+ angle-speed 0.1)))
+                :dec-fn #(swap! state update :angle-speed (fn [angle-speed] (max (- angle-speed 0.1) 0)))}
+               {:text "Avstand"
+                :inc-fn #(swap! state update :x-spacing (fn [x-spacing] (+ x-spacing 1)))
+                :dec-fn #(swap! state update :x-spacing (fn [x-spacing] (max (- x-spacing 1) 0)))}
+               {:text "Fart"
+                :inc-fn #(swap! state update :speed (fn [x] (+ x 0.01)))
+                :dec-fn #(swap! state update :speed (fn [speed] (max (- speed 0.01) 0)))}
+               {:text "Rotasjon"
+                :on-click #(swap! state update :rotation-multiplier (fn [a] (if (= 0 a)
+                                                                              (:rotation-multiplier initial-state)
+                                                                              0)))}
+               {:text "Tilbakestill"
                 :on-click #(reset! state initial-state)}]
      :letters (map-indexed (fn [idx letter]
-                             (let [x (+ (* y-speed tick)
-                                        (* idx 0.5))]
-                               {:text letter
-                                :color (nth (cycle colors) idx)
-                                :top (-> (y-pos {:x x
-                                                 :amplitude amplitude
-                                                 :y-offset y-offset})
-                                         (str "%"))
-                                :left (-> (x-pos {:x (- (* idx x-spacing)
-                                                        (* x-speed tick))
-                                                  :width 300})
-                                          (str "%"))
-                                :rotation (-> (js/Math.cos x)
-                                              (* rotation-multiplier)
-                                              (radians-to-degree)
-                                              (str "deg"))}))
+                             {:text letter
+                              :color (nth (cycle colors) idx)
+                              :top (-> (y-pos {:angle (+ tick (* idx angle-speed))
+                                               :amplitude amplitude
+                                               :y-offset y-offset}))
+                              :left (-> (x-pos {:x (+ (* tick 10) (* idx x-spacing))
+                                                :width 1200}))
+                              :rotation (-> (js/Math.cos (+ tick (* idx angle-speed)))
+                                            (* rotation-multiplier)
+                                            (radians-to-degree)
+                                            (str "deg"))})
                 letters)}))
 
 
@@ -122,7 +120,8 @@
 
 (defn render-loop []
   (render)
-  (swap! state update :tick inc)
+  (swap! state update :tick #(do
+                               (+ % (:speed @state))))
   (.requestAnimationFrame js/window render-loop))
 
 (defonce start
