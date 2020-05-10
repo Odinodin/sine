@@ -6,5 +6,3 @@
 (defn ^:after-load render-on-reload []
   (prn "Reloaded")
   (app/render))
-
-(defonce started (do (app/render) true))

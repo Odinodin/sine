@@ -1,7 +1,5 @@
 (ns sine.core
-  (:require [dumdom.core :as dumdom :refer [defcomponent]]
-            [cljs.core.async :refer [<! alts! put! timeout chan]])
-  (:require-macros [cljs.core.async.macros :refer [go-loop]]))
+  (:require [dumdom.core :as dumdom :refer [defcomponent]]))
 
 (def one-eighty-over-pi (/ 180 js/Math.PI))
 
@@ -19,16 +17,17 @@
 
 (defcomponent styling []
   [:style {}
-   (to-css {"#app" {:height "100vh"
-                    :position "absolute"}
+   (to-css {"#app" {}
             ".container" {:position "relative" :overflow "hidden"}
             ".button" {:padding "6px" :font-size "1.5rem" :cursor "pointer" :border "1px solid black" :display "inline-block"
-                       :min-width "40px" :height "44px" :user-select "none"  :border-radius "2px" :background-color "lightgray"}
-            ".letter" {:display "inline-block" :position "absolute" :font-size "2rem" :font-family "Helvetica Neue" :font-weight "bold"}})])
+                       :min-width "40px" :height "44px" :user-select "none" :border-radius "2px" :background-color "lightgray"}
+            ".letter" {:display "inline-block" :position "absolute" :font-size "2rem" :font-family "Helvetica Neue" :font-weight "bold"}
+            ".burn" {:color "#f8f8ff" :text-shadow "0 -2px 3px #111,0 3px 4px #666"
+                     }})])
 
 
 (defcomponent Letter [{:keys [text top left rotation color]}]
-  [:div {:className "letter"
+  [:div {:className "letter burn"
          :style {:top top
                  :left left
                  :color (or color "red")
@@ -64,7 +63,7 @@
 
 (defonce state (atom initial-state))
 
-(def colors ["#330000" "#990000" "#cc0000" "#dd0000"])
+(def colors ["#641220" "#6e1423" "#85182a" "#a11d33" "#a71e34" "#b21e35" "#bd1f36" "#c71f37" "#da1e37" "#e01e37"])
 
 (defn y-pos [{:keys [angle amplitude y-offset]}]
   (-> (js/Math.sin angle)
@@ -120,16 +119,17 @@
 
 
 (defn render []
-  (dumdom/render (Main (prepare state {:width 600 :height 300})) (js/document.getElementById "app")))
+  (dumdom/render (Main (prepare state {:width 600 :height 200})) (js/document.getElementById "app")))
 
 (defn render-loop []
   (render)
   (swap! state update :tick #(+ % (:speed @state)))
   (.requestAnimationFrame js/window render-loop))
 
-(defonce start
-  (render-loop))
-
+(.addEventListener js/document "DOMContentLoaded"
+  (fn []
+    (prn "STARTING")
+    (render-loop)))
 
 (comment
   (swap! state assoc :offset 20)
