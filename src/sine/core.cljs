@@ -19,16 +19,19 @@
   [:style {}
    (to-css {"#app" {}
             ".container" {:position "relative" :overflow "hidden"}
-            ".button" {:padding "6px" :font-size "1.5rem" :cursor "pointer" :border "1px solid black" :display "inline-block"
+            ".button" {:padding "6px" :font-size "1.2rem" :cursor "pointer" :border "1px solid black" :display "inline-block"
                        :min-width "40px" :height "44px" :user-select "none" :border-radius "2px" :background-color "lightgray"}
             ".letter" {:display "inline-block" :position "absolute" :font-size "2rem" :font-family "Helvetica Neue" :font-weight "bold"}
-            ".burn" {:color "#f8f8ff" :text-shadow "0 -2px 3px #111,0 3px 4px #666"
-                     }})])
+            ".effect-shadow" {:color "#f8f8ff" :text-shadow "0 -2px 3px #111,0 3px 4px #666"}
+            ".effect-blurred" {:color "transparent" :text-shadow "0 0 30px #000"}
+            ".effect-background" {:color "black !important"
+                                  :background "linear-gradient(60deg, #cc0000, #ff8888)"
+                                  :border-radius "10px" :padding "4px"}})])
 
-
-(defcomponent Letter [{:keys [text top left rotation color]}]
-  [:div {:className "letter burn"
+(defcomponent Letter [{:keys [text top left rotation color effect-class]}]
+  [:div {:className (str "letter " effect-class)
          :style {:top top
+                 :display (when (= text " ") "none")
                  :left left
                  :color (or color "red")
                  :transform (str "rotate(" rotation ")")}} text])
@@ -59,11 +62,13 @@
                     :x-speed -10
                     :x-spacing 26
                     :speed (/ 1 8)
-                    :rotation-multiplier 0.5})
+                    :rotation-multiplier 0.5
+                    :effect-index 0})
 
 (defonce state (atom initial-state))
 
 (def colors ["#641220" "#6e1423" "#85182a" "#a11d33" "#a71e34" "#b21e35" "#bd1f36" "#c71f37" "#da1e37" "#e01e37"])
+(def effects ["effect-shadow" "effect-blurred" "effect-background"])
 
 (defn y-pos [{:keys [angle amplitude y-offset]}]
   (-> (js/Math.sin angle)
@@ -80,15 +85,16 @@
                 angle-speed
                 x-spacing
                 x-speed
-                rotation-multiplier]} @state]
+                rotation-multiplier
+                effect-index]} @state]
     (let [y-offset (/ height 2)
           sentence-width (max width (* (+ (count letters) 1) x-spacing))]
       {:buttons [{:text "Amplitude"
                   :inc-fn #(swap! state update :amplitude inc)
                   :dec-fn #(swap! state update :amplitude dec)}
                  {:text "Periode"
-                  :inc-fn #(swap! state update :angle-speed (fn [angle-speed] (+ angle-speed 0.1)))
-                  :dec-fn #(swap! state update :angle-speed (fn [angle-speed] (max (- angle-speed 0.1) 0)))}
+                  :inc-fn #(swap! state update :angle-speed (fn [angle-speed] (max (- angle-speed 0.1) 0)))
+                  :dec-fn #(swap! state update :angle-speed (fn [angle-speed] (+ angle-speed 0.1)))}
                  {:text "Avstand"
                   :inc-fn #(swap! state update :x-spacing (fn [x-spacing] (+ x-spacing 1)))
                   :dec-fn #(swap! state update :x-spacing (fn [x-spacing] (max (- x-spacing 1) 0)))}
@@ -99,10 +105,14 @@
                   :on-click #(swap! state update :rotation-multiplier (fn [a] (if (= 0 a)
                                                                                 (:rotation-multiplier initial-state)
                                                                                 0)))}
+                 {:text "Effekt"
+                  :on-click #(swap! state update :effect-index (fn [index] (mod (inc index) (count effects))))}
+
                  {:text "Tilbakestill"
                   :on-click #(reset! state initial-state)}]
        :letters (map-indexed (fn [idx letter]
                                {:text letter
+                                :effect-class (nth effects effect-index)
                                 :color (nth (cycle colors) idx)
                                 :top (-> (y-pos {:angle (+ tick (* idx angle-speed))
                                                  :amplitude amplitude
