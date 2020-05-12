@@ -1,12 +1,6 @@
 (ns sine.core
   (:require [dumdom.core :as dumdom :refer [defcomponent]]))
 
-(def one-eighty-over-pi (/ 180 js/Math.PI))
-
-(defn radians-to-degree [radians]
-  ;; x degrees * rad * 180/π
-  (* radians one-eighty-over-pi))
-
 (defn to-css [rules]
   (->> rules (map
                (fn [[rule-name config]]
@@ -42,7 +36,7 @@
    (into [:div {:className "container" :style {:width width :height height}}]
      (for [c letters]
        [Letter c]))
-   (into [:div {:style {:display "flex"}}]
+   (into [:div {:style {:display "flex" :flex-flow "row wrap"}}]
      (for [b buttons]
        (if (:on-click b)
          [:div {:style {:align-self "flex-end" :padding "4px"}}
@@ -64,8 +58,6 @@
                     :speed (/ 1 8)
                     :rotation-multiplier 0.5
                     :effect-index 0})
-
-(defonce state (atom initial-state))
 
 (def colors ["#641220" "#6e1423" "#85182a" "#a11d33" "#a71e34" "#b21e35" "#bd1f36" "#c71f37" "#da1e37" "#e01e37"])
 (def effects ["effect-shadow" "effect-blurred" "effect-background"])
@@ -121,18 +113,19 @@
                                                   :width sentence-width}))
                                 :rotation (-> (js/Math.cos (+ tick (* idx angle-speed)))
                                               (* rotation-multiplier)
-                                              (radians-to-degree)
-                                              (str "deg"))})
+                                              (str "rad"))})
                   letters)
        :width width
        :height height})))
 
 
-(defn render []
+(defn render [state]
   (dumdom/render (Main (prepare state {:width 600 :height 200})) (js/document.getElementById "app")))
 
+(defonce state (atom initial-state))
+
 (defn render-loop []
-  (render)
+  (render state)
   (swap! state update :tick #(+ % (:speed @state)))
   (.requestAnimationFrame js/window render-loop))
 

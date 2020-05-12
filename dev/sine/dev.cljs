@@ -4,5 +4,4 @@
 (enable-console-print!)
 
 (defn ^:after-load render-on-reload []
-  (prn "Reloaded")
-  (app/render))
+  (prn "Reloaded"))
